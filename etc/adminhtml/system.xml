@@ -19,6 +19,11 @@
                     <label>Enabled</label>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
+
+                <field id="image_quality" type="text" translate="label comment" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Image Qualilty</label>
+                    <comment><![CDATA[Value unit is percentage. Example: 100.]]></comment>
+                </field>
             </group>
         </section>
     </system>

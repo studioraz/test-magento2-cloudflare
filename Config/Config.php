@@ -38,6 +38,8 @@ class Config
 
     // general
     public const KEY_CONFIG_ACTIVE = 'active';
+    public const KEY_CONFIG_IMAGE_QUALITY = 'image_quality';
+    //public const KEY_CONFIG_ = '';
     /**#@- */
 
     protected ScopeConfigInterface $scopeConfig;
@@ -72,6 +74,15 @@ class Config
     public function getActive($storeId = null): ?string
     {
         return $this->getValue(static::KEY_CONFIG_ACTIVE, static::DEFAULT_PATH_GROUP, $storeId);
+    }
+
+    /**
+     * @param mixed|null $storeId
+     * @return int
+     */
+    public function getImageQuality($storeId = null): int
+    {
+        return (int)$this->getValue(static::KEY_CONFIG_IMAGE_QUALITY, static::DEFAULT_PATH_GROUP, $storeId);
     }
 
     /**
