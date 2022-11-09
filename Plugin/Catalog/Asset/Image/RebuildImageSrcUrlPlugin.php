@@ -18,24 +18,24 @@ use SR\Cloudflare\Helper\CloudflareUrlFormatHelper;
 class RebuildImageSrcUrlPlugin
 {
     private ModuleState $moduleState;
-    private CloudflareUrlFormatHelper $ulrFormatter;
+    private CloudflareUrlFormatHelper $urlFormatter;
     private CatalogImageAssetContextFactory $catalogImageAssetContextFactory;
     private CatalogImageHelperFactory $catalogImageHelperFactory;
 
     /**
      * @param ModuleState $moduleState
-     * @param CloudflareUrlFormatHelper $ulrFormatter
+     * @param CloudflareUrlFormatHelper $urlFormatter
      * @param CatalogImageAssetContextFactory $catalogImageAssetContextFactory
      * @param CatalogImageHelperFactory $catalogImageHelperFactory
      */
     public function __construct(
         ModuleState $moduleState,
-        CloudflareUrlFormatHelper $ulrFormatter,
+        CloudflareUrlFormatHelper $urlFormatter,
         CatalogImageAssetContextFactory $catalogImageAssetContextFactory,
         CatalogImageHelperFactory $catalogImageHelperFactory
     ) {
         $this->moduleState = $moduleState;
-        $this->ulrFormatter = $ulrFormatter;
+        $this->urlFormatter = $urlFormatter;
         $this->catalogImageAssetContextFactory = $catalogImageAssetContextFactory;
         $this->catalogImageHelperFactory = $catalogImageHelperFactory;
     }
@@ -64,7 +64,7 @@ class RebuildImageSrcUrlPlugin
             CloudflareUrlFormatHelper::EXTRA_PARAM_KEY_ORIG_IMG_URL => $this->getOriginalImageUrl($subject) ?: null,
         ];
 
-        return $this->ulrFormatter->getFormattedUrl($result, $extraParams);
+        return $this->urlFormatter->getFormattedUrl($result, $extraParams);
     }
 
     /**
@@ -78,7 +78,7 @@ class RebuildImageSrcUrlPlugin
     public function afterGetMediaUrl(ProductMediaConfig $subject, string $result): string
     {
         if ($this->moduleState->isActive()) {
-            $result = $this->ulrFormatter->getFormattedUrl($result);
+            $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
         return $result;

@@ -15,18 +15,18 @@ use SR\Cloudflare\Helper\CloudflareUrlFormatHelper;
 class GetLogoSrcPlugin
 {
     private ModuleState $moduleState;
-    private CloudflareUrlFormatHelper $ulrFormatter;
+    private CloudflareUrlFormatHelper $urlFormatter;
 
     /**
      * @param ModuleState $moduleState
-     * @param CloudflareUrlFormatHelper $ulrFormatter
+     * @param CloudflareUrlFormatHelper $urlFormatter
      */
     public function __construct(
         ModuleState $moduleState,
-        CloudflareUrlFormatHelper $ulrFormatter
+        CloudflareUrlFormatHelper $urlFormatter
     ) {
         $this->moduleState = $moduleState;
-        $this->ulrFormatter = $ulrFormatter;
+        $this->urlFormatter = $urlFormatter;
     }
 
     /**
@@ -40,7 +40,7 @@ class GetLogoSrcPlugin
     public function afterGetLogoSrc(Logo $subject, string $result): string
     {
         if ($this->moduleState->isActive()) {
-            $result = $this->ulrFormatter->getFormattedUrl($result);
+            $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
         return $result;

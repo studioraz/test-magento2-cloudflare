@@ -17,18 +17,18 @@ use SR\Cloudflare\Helper\CloudflareUrlFormatHelper;
 class RebuildImageSrcUrlPlugin
 {
     private ModuleState $moduleState;
-    private CloudflareUrlFormatHelper $ulrFormatter;
+    private CloudflareUrlFormatHelper $urlFormatter;
 
     /**
      * @param ModuleState $moduleState
-     * @param CloudflareUrlFormatHelper $ulrFormatter
+     * @param CloudflareUrlFormatHelper $urlFormatter
      */
     public function __construct(
         ModuleState $moduleState,
-        CloudflareUrlFormatHelper $ulrFormatter
+        CloudflareUrlFormatHelper $urlFormatter
     ) {
         $this->moduleState = $moduleState;
-        $this->ulrFormatter = $ulrFormatter;
+        $this->urlFormatter = $urlFormatter;
     }
 
     /**
@@ -42,7 +42,7 @@ class RebuildImageSrcUrlPlugin
     public function afterGetLogoSrc(Logo $subject, string $result): string
     {
         if ($this->moduleState->isActive()) {
-            $result = $this->ulrFormatter->getFormattedUrl($result);
+            $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
         return $result;
@@ -60,7 +60,7 @@ class RebuildImageSrcUrlPlugin
     public function afterMediaDirective(CmsTemplateFilter $subject, string $result, ...$arguments): string
     {
         if ($this->moduleState->isActive()) {
-            $result = $this->ulrFormatter->getFormattedUrl($result);
+            $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
         return $result;
@@ -78,7 +78,7 @@ class RebuildImageSrcUrlPlugin
     public function afterGetMedia(WidgetBlockInterface $subject, string $result, ...$arguments): string
     {
         if ($this->moduleState->isActive()) {
-            $result = $this->ulrFormatter->getFormattedUrl($result);
+            $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
         return $result;
