@@ -9,6 +9,7 @@
             <general>
                 <active>0</active>
                 <image_quality>85</image_quality>
+                <image_fit>none</image_fit>
             </general>
         </srcloudflare>
     </default>

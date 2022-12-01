@@ -12,6 +12,7 @@ use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
 use Magento\Framework\UrlInterface;
 use SR\Cloudflare\Config\Config;
+use SR\Cloudflare\Model\System\Config\Source\ImageFit;
 
 class CloudflareUrlFormatHelper extends AbstractHelper
 {
@@ -25,6 +26,7 @@ class CloudflareUrlFormatHelper extends AbstractHelper
         'format' => 'auto',
         'metadata' => 'none',
         'quality' => '85',
+        'fit' => ImageFit::NONE,
         'width' => null,
         'height' => null,
     ];
@@ -90,10 +92,17 @@ class CloudflareUrlFormatHelper extends AbstractHelper
     {
         $string = [];
         foreach ($this->queryStringParams as $code => $value) {
+            // NOTE: step to fetch values of Specific params
             if ($code === 'quality') {
                 $value = $this->config->getImageQuality();
+            } elseif ($code === 'fit') {
+                $value = $this->config->getImageFit();
+                if ($value === ImageFit::NONE) {
+                    continue;// NOTE: there is no need to add such param with 'none' value.
+                }
             }
 
+            // NOTE: on $value=NULL validate predefined values
             if ($value === null) {
                 if (empty($predefined[$code] ?? null)) {
                     continue;

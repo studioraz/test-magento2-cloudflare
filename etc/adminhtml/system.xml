@@ -20,9 +20,14 @@
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
 
-                <field id="image_quality" type="text" translate="label comment" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
-                    <label>Image Qualilty</label>
+                <field id="image_quality" type="text" translate="label comment" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Image Quality</label>
                     <comment><![CDATA[Value unit is percentage. Example: 100.]]></comment>
+                </field>
+
+                <field id="image_fit" type="select" translate="label" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Image Fit</label>
+                    <source_model>SR\Cloudflare\Model\System\Config\Source\ImageFit</source_model>
                 </field>
             </group>
         </section>

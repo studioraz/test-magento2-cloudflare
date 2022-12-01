@@ -39,6 +39,7 @@ class Config
     // general
     public const KEY_CONFIG_ACTIVE = 'active';
     public const KEY_CONFIG_IMAGE_QUALITY = 'image_quality';
+    public const KEY_CONFIG_IMAGE_FIT = 'image_fit';
     //public const KEY_CONFIG_ = '';
     /**#@- */
 
@@ -83,6 +84,19 @@ class Config
     public function getImageQuality($storeId = null): int
     {
         return (int)$this->getValue(static::KEY_CONFIG_IMAGE_QUALITY, static::DEFAULT_PATH_GROUP, $storeId);
+    }
+
+    /**
+     * @param mixed|null $storeId
+     * @return string
+     */
+    public function getImageFit($storeId = null): string
+    {
+        $value = $this->getValue(static::KEY_CONFIG_IMAGE_FIT, static::DEFAULT_PATH_GROUP, $storeId);
+        if (empty($value)) {
+            $value = \SR\Cloudflare\Model\System\Config\Source\ImageFit::NONE;
+        }
+        return $value;
     }
 
     /**
