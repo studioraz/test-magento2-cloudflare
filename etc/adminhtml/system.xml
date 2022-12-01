@@ -28,6 +28,7 @@
                 <field id="image_fit" type="select" translate="label" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
                     <label>Image Fit</label>
                     <source_model>SR\Cloudflare\Model\System\Config\Source\ImageFit</source_model>
+                    <comment><![CDATA[Affects interpretation of <i>width</i> and <i>height</i>. All resizing modes preserve aspect ratio.<br>See <a href="https://developers.cloudflare.com/images/image-resizing/url-format/#fit" target="_blank">Cloudflare documentation</a> for more information.]]></comment>
                 </field>
             </group>
         </section>
