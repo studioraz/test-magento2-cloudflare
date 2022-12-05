@@ -10,8 +10,8 @@ namespace SR\Cloudflare\Helper;
 
 use Magento\Framework\App\Helper\AbstractHelper;
 use Magento\Framework\App\Helper\Context;
-use Magento\Framework\UrlInterface;
 use SR\Cloudflare\Config\Config;
+use SR\Cloudflare\Config\ModuleState;
 use SR\Cloudflare\Model\System\Config\Source\ImageFit;
 
 class CloudflareUrlFormatHelper extends AbstractHelper
@@ -31,22 +31,22 @@ class CloudflareUrlFormatHelper extends AbstractHelper
         'height' => null,
     ];
 
+    private ModuleState $moduleState;
     private Config $config;
-    private UrlInterface $url;
 
     /**
      * @param Context $context
+     * @param ModuleState $moduleState
      * @param Config $config
-     * @param UrlInterface $url
      */
     public function __construct(
         Context $context,
-        Config $config,
-        UrlInterface $url
+        ModuleState $moduleState,
+        Config $config
     ) {
         parent::__construct($context);
+        $this->moduleState = $moduleState;
         $this->config = $config;
-        $this->url = $url;
     }
 
     /**
@@ -57,6 +57,10 @@ class CloudflareUrlFormatHelper extends AbstractHelper
      */
     public function getFormattedUrl(string $initUrl, array $extras = []): string
     {
+        if (!$this->moduleState->isActive()) {
+            return $initUrl;
+        }
+
         // NOTE: sample: data:image/png;base64,iVBORw0KGgoAAAANS...K5CYII=
         if (mb_strpos($initUrl, 'data:image/') !== false) {
             // NOTE: skip urls, which can be base64-encoded image-content
@@ -74,7 +78,7 @@ class CloudflareUrlFormatHelper extends AbstractHelper
         }
 
         // NOTE: remove BaseUrl part
-        $url = str_replace($this->url->getBaseUrl(), '', $initUrl);
+        $url = str_replace($this->_urlBuilder->getBaseUrl(), '', $initUrl);
         $url = '/' . trim($url, '/');
 
         $predefined = [];

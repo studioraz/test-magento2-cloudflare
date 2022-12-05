@@ -51,6 +51,8 @@ class RebuildImageSrcUrlPlugin
     public function afterGetUrl(CatalogImageAsset $subject, string $result): string
     {
         if (!$this->moduleState->isActive()) {
+            // NOTE: Module State activity validation was encapsulated into getFormattedUrl method
+            // TODO: update this logic in the future
             return $result;
         }
 
@@ -78,6 +80,8 @@ class RebuildImageSrcUrlPlugin
     public function afterGetMediaUrl(ProductMediaConfig $subject, string $result): string
     {
         if ($this->moduleState->isActive()) {
+            // NOTE: Module State activity validation was encapsulated into getFormattedUrl method
+            // TODO: update this logic in the future
             $result = $this->urlFormatter->getFormattedUrl($result);
         }
 

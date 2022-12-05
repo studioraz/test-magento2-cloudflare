@@ -42,6 +42,8 @@ class RebuildImageSrcUrlPlugin
     public function afterGetLogoSrc(Logo $subject, string $result): string
     {
         if ($this->moduleState->isActive()) {
+            // NOTE: Module State activity validation was encapsulated into getFormattedUrl method
+            // TODO: update this logic in the future
             $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
@@ -60,6 +62,8 @@ class RebuildImageSrcUrlPlugin
     public function afterMediaDirective(CmsTemplateFilter $subject, string $result, ...$arguments): string
     {
         if ($this->moduleState->isActive()) {
+            // NOTE: Module State activity validation was encapsulated into getFormattedUrl method
+            // TODO: update this logic in the future
             $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
@@ -78,6 +82,8 @@ class RebuildImageSrcUrlPlugin
     public function afterGetMedia(WidgetBlockInterface $subject, string $result, ...$arguments): string
     {
         if ($this->moduleState->isActive()) {
+            // NOTE: Module State activity validation was encapsulated into getFormattedUrl method
+            // TODO: update this logic in the future
             $result = $this->urlFormatter->getFormattedUrl($result);
         }
 
