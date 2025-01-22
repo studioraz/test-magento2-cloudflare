@@ -77,8 +77,8 @@ class CloudflareUrlFormatHelper extends AbstractHelper
             $initUrl = $extras[self::EXTRA_PARAM_KEY_ORIG_IMG_URL];
         }
 
-        // NOTE: remove BaseUrl part
-        $baseUrl = $this->_urlBuilder->getBaseUrl();
+        // NOTE: remove BaseUrl parts like subdirectory etc to get the correct URL
+        $baseUrl = $this->extractBaseUrl($this->_urlBuilder->getBaseUrl());
         $url = str_replace($baseUrl, '', $initUrl);
         $url = '/' . trim($url, '/');
 
@@ -120,5 +120,18 @@ class CloudflareUrlFormatHelper extends AbstractHelper
             $string[] = "{$code}={$value}";
         }
         return implode(',', $string);
+    }
+
+    /**
+     * Changes to fecth domain without subdirectory in base url etc.
+     * As for CF after domain URI should start with /cdn-cgi/image/ only and nothing before
+     *
+     * @param $url
+     * @return string
+     */
+    private function extractBaseUrl($url): string
+    {
+        $parsedUrl = parse_url($url);
+        return $parsedUrl['scheme'] . "://" . $parsedUrl['host'];
     }
 }
