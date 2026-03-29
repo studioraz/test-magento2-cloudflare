@@ -77,20 +77,40 @@ jobs:
             echo "" > /tmp/current_home.md
           fi
 
+      - name: Build user prompt
+        run: |
+          {
+            echo "Update the wiki documentation for release **${{ steps.release.outputs.tag }}**."
+            echo ""
+            echo "**Release URL:** ${{ steps.release.outputs.url }}"
+            echo "**Release date:** ${{ steps.release.outputs.date }}"
+            echo ""
+            echo "### Changed files"
+            echo '```'
+            cat /tmp/changed_files.txt
+            echo '```'
+            echo ""
+            echo "### Code diff"
+            echo '```diff'
+            cat /tmp/release.diff
+            echo '```'
+            echo ""
+            echo "### Current Release-Notes.md"
+            cat /tmp/current_release_notes.md
+            echo ""
+            echo "### Current Home.md"
+            cat /tmp/current_home.md
+          } > /tmp/user_prompt.txt
+
       - name: Generate documentation update
         id: ai
         uses: actions/ai-inference@v1
         with:
-          prompt-file: .github/prompts/update-wiki.prompt.yml
-          input: |
-            version: ${{ steps.release.outputs.tag }}
-            release_url: ${{ steps.release.outputs.url }}
-            release_date: ${{ steps.release.outputs.date }}
-          file_input: |
-            diff: /tmp/release.diff
-            changed_files: /tmp/changed_files.txt
-            current_release_notes: /tmp/current_release_notes.md
-            current_home: /tmp/current_home.md
+          system-prompt-file: .github/prompts/update-wiki-system.md
+          prompt-file: /tmp/user_prompt.txt
+          model: anthropic/claude-opus-4-6
+          max-completion-tokens: 8000
+          temperature: 0.2
 
       - name: Apply documentation changes
         env:

@@ -81,23 +81,56 @@ jobs:
           find . \( -path "*/etc/config.xml" -o -path "*/etc/adminhtml/system.xml" \) \
             -exec cat {} + 2>/dev/null > /tmp/config_xml.txt || true
 
+      - name: Build user prompt
+        if: steps.check.outputs.exists == 'false'
+        run: |
+          {
+            echo "Generate initial wiki documentation for this Magento 2 module."
+            echo ""
+            echo "### Release info"
+            echo "- **Version:** ${{ steps.release.outputs.tag }}"
+            echo "- **Release URL:** ${{ steps.release.outputs.url }}"
+            echo "- **Date:** ${{ steps.release.outputs.date }}"
+            echo ""
+            echo "### composer.json"
+            echo '```json'
+            cat /tmp/composer.txt
+            echo '```'
+            echo ""
+            echo "### README.md"
+            cat /tmp/readme.txt
+            echo ""
+            echo "### Module XML (etc/module.xml)"
+            echo '```xml'
+            cat /tmp/module_xml.txt
+            echo '```'
+            echo ""
+            echo "### Configuration XML (config.xml + system.xml)"
+            echo '```xml'
+            cat /tmp/config_xml.txt
+            echo '```'
+            echo ""
+            echo "### Full file tree"
+            echo '```'
+            cat /tmp/file_tree.txt
+            echo '```'
+            echo ""
+            echo "### PHP class/interface/function signatures"
+            echo '```php'
+            cat /tmp/signatures.txt
+            echo '```'
+          } > /tmp/user_prompt.txt
+
       - name: Generate initial documentation
         if: steps.check.outputs.exists == 'false'
         id: ai
         uses: actions/ai-inference@v1
         with:
-          prompt-file: .github/prompts/init-wiki.prompt.yml
-          input: |
-            version: ${{ steps.release.outputs.tag }}
-            release_url: ${{ steps.release.outputs.url }}
-            release_date: ${{ steps.release.outputs.date }}
-          file_input: |
-            composer: /tmp/composer.txt
-            readme: /tmp/readme.txt
-            module_xml: /tmp/module_xml.txt
-            config_xml: /tmp/config_xml.txt
-            file_tree: /tmp/file_tree.txt
-            signatures: /tmp/signatures.txt
+          system-prompt-file: .github/prompts/init-wiki-system.md
+          prompt-file: /tmp/user_prompt.txt
+          model: anthropic/claude-opus-4-6
+          max-completion-tokens: 8000
+          temperature: 0.2
 
       - name: Write wiki files
         if: steps.check.outputs.exists == 'false'
