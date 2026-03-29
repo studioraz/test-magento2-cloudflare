@@ -53,13 +53,21 @@ jobs:
 
           echo "Diffing $PREV_TAG..$TAG"
 
-          # Structural diff of source files (capped at 100KB to stay within model context)
-          git diff "$PREV_TAG" "$TAG" -- '*.php' '*.xml' '*.phtml' '*.js' '*.html' '*.css' \
-            | head -c 100000 > /tmp/release.diff
-
           # Changed file list
           git diff "$PREV_TAG" "$TAG" --name-only -- '*.php' '*.xml' '*.phtml' \
             | head -40 > /tmp/changed_files.txt
+
+          # Structural diff only: file headers, context lines, and key code changes
+          # Capped to ~12KB to stay well within 8K token limit with system prompt
+          git diff "$PREV_TAG" "$TAG" -- '*.php' '*.xml' '*.phtml' \
+            | grep -E '^(diff |---|\+\+\+|@@|[+-].*(class |interface |function |const |<config|<system|<field|<section|<group|<source_model|<frontend_model))' \
+            | head -c 12000 > /tmp/release.diff
+
+          # If structural diff is too small, fall back to stat summary
+          if [ ! -s /tmp/release.diff ] || [ "$(wc -c < /tmp/release.diff)" -lt 100 ]; then
+            git diff "$PREV_TAG" "$TAG" --stat -- '*.php' '*.xml' '*.phtml' \
+              | head -c 12000 > /tmp/release.diff
+          fi
 
       - name: Prepare current wiki content
         run: |
@@ -80,27 +88,18 @@ jobs:
       - name: Build user prompt
         run: |
           {
-            echo "Update the wiki documentation for release **${{ steps.release.outputs.tag }}**."
+            echo "Update wiki for release **${{ steps.release.outputs.tag }}**."
+            echo "URL: ${{ steps.release.outputs.url }}"
+            echo "Date: ${{ steps.release.outputs.date }}"
             echo ""
-            echo "**Release URL:** ${{ steps.release.outputs.url }}"
-            echo "**Release date:** ${{ steps.release.outputs.date }}"
-            echo ""
-            echo "### Changed files"
-            echo '```'
+            echo "Changed files:"
             cat /tmp/changed_files.txt
-            echo '```'
             echo ""
-            echo "### Code diff"
-            echo '```diff'
+            echo "Diff:"
             cat /tmp/release.diff
-            echo '```'
-            echo ""
-            echo "### Current Release-Notes.md"
-            cat /tmp/current_release_notes.md
-            echo ""
-            echo "### Current Home.md"
-            cat /tmp/current_home.md
           } > /tmp/user_prompt.txt
+
+          echo "Prompt size: $(wc -c < /tmp/user_prompt.txt) bytes"
 
       - name: Generate documentation update
         id: ai
