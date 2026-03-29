@@ -80,7 +80,7 @@ If no version is provided, use the version from composer.json.
 
 ## [vX.Y.Z](release_url) — YYYY-MM-DD
 
-Initial release.
+Initial automatic documentation/module release.
 
 ### Features
 - [list the main capabilities based on the codebase]
