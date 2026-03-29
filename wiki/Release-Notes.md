@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.7](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.7) — 2026-03-29
+
+### Improvements
+- Updated the default branch reference in the wiki synchronization workflow for better compatibility with repository configurations.
+
+
 ## [v0.0.6](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.6) — 2026-03-29
 
 ### Improvements
