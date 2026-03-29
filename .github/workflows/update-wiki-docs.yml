@@ -21,7 +21,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.repository.default_branch }}
+          ref: master
 
       - name: Resolve release context
         id: release
@@ -117,8 +117,31 @@ jobs:
         run: |
           mkdir -p wiki
 
-          # Strip markdown code fences if present, then parse JSON
-          sed '/^```/d' "$AI_RESPONSE_FILE" > /tmp/clean_response.json
+          echo "=== Raw AI response (first 500 chars) ==="
+          head -c 500 "$AI_RESPONSE_FILE"
+          echo ""
+          echo "==="
+
+          # Extract JSON from response — handle code fences, leading text, etc.
+          # Try: 1) raw file as JSON, 2) strip fences, 3) extract JSON object with grep
+          if jq empty "$AI_RESPONSE_FILE" 2>/dev/null; then
+            cp "$AI_RESPONSE_FILE" /tmp/clean_response.json
+          else
+            # Strip markdown fences and any non-JSON lines
+            sed '/^```/d' "$AI_RESPONSE_FILE" > /tmp/stripped.txt
+            if jq empty /tmp/stripped.txt 2>/dev/null; then
+              cp /tmp/stripped.txt /tmp/clean_response.json
+            else
+              # Last resort: extract everything between first { and last }
+              sed -n '/^{/,/^}/p' /tmp/stripped.txt > /tmp/clean_response.json
+              if ! jq empty /tmp/clean_response.json 2>/dev/null; then
+                echo "ERROR: Could not parse AI response as JSON"
+                echo "Full response:"
+                cat "$AI_RESPONSE_FILE"
+                exit 1
+              fi
+            fi
+          fi
 
           # Extract the new release notes entry
           jq -r '.release_notes_entry' /tmp/clean_response.json > /tmp/new_entry.md
@@ -156,5 +179,5 @@ jobs:
             echo "No wiki changes to commit"
           else
             git commit -m "docs: update wiki for ${{ steps.release.outputs.tag }}"
-            git push
+            git push origin HEAD:master
           fi
