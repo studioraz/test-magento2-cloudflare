@@ -1,5 +1,12 @@
 # Release Notes
 
+## [v0.0.2](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.2) — 2026-03-29
+
+### Improvements
+- Revised and streamlined the automated workflow for updating wiki documentation, ensuring faster and more reliable updates.
+- Refactored internal documentation prompts for clarity and maintainability.
+
+
 
 
 
