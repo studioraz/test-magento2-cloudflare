@@ -58,17 +58,19 @@ jobs:
           git diff "$PREV_TAG" "$TAG" --name-only -- '*.php' '*.xml' '*.phtml' \
             | head -40 > /tmp/changed_files.txt
 
-          # Structural diff only: file headers, context lines, and key code changes
-          # Capped to ~12KB to stay well within 8K token limit with system prompt
-          git diff "$PREV_TAG" "$TAG" -- '*.php' '*.xml' '*.phtml' \
-            | grep -E '^(diff |---|\+\+\+|@@|[+-].*(class |interface |function |const |<config|<system|<field|<section|<group|<source_model|<frontend_model))' \
-            | head -c 12000 > /tmp/release.diff
+          # Full diff but capped at ~10KB to stay within token limits
+          # Use --no-ext-diff and -U3 for compact but meaningful context
+          git diff "$PREV_TAG" "$TAG" -U3 -- '*.php' '*.xml' '*.phtml' \
+            | head -c 10000 > /tmp/release.diff
 
-          # If structural diff is too small, fall back to stat summary
-          if [ ! -s /tmp/release.diff ] || [ "$(wc -c < /tmp/release.diff)" -lt 100 ]; then
-            git diff "$PREV_TAG" "$TAG" --stat -- '*.php' '*.xml' '*.phtml' \
-              | head -c 12000 > /tmp/release.diff
+          # If diff is empty (e.g. only non-source changes), use stat
+          if [ ! -s /tmp/release.diff ]; then
+            git diff "$PREV_TAG" "$TAG" --stat \
+              | head -c 10000 > /tmp/release.diff
           fi
+
+          echo "Diff size: $(wc -c < /tmp/release.diff) bytes"
+          echo "Changed files: $(wc -l < /tmp/changed_files.txt)"
 
       - name: Prepare current wiki content
         run: |
