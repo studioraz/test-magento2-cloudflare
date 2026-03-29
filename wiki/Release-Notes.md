@@ -1,5 +1,16 @@
 # Release Notes
 
+## [v0.0.5](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.5) — 2026-03-29
+
+### Improvements
+- Expanded the token limit for workflow automation, enabling the handling of larger documentation updates.
+- Enhanced diff processing in workflows to include all changed files, supporting more comprehensive documentation updates.
+
+### Features
+- Added detailed instructions for maintaining wiki documentation, providing clear guidelines for consistent updates.
+
+
+
 
 
 
