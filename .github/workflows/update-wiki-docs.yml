@@ -109,7 +109,7 @@ jobs:
           system-prompt-file: .github/prompts/update-wiki-system.md
           prompt-file: /tmp/user_prompt.txt
           model: openai/gpt-4o
-          max-tokens: 8000
+#          max-tokens: 8000
 
       - name: Apply documentation changes
         env:
