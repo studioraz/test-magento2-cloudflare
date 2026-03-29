@@ -137,8 +137,12 @@ jobs:
           AI_RESPONSE_FILE: ${{ steps.ai.outputs.response-file }}
         run: |
           mkdir -p wiki
-          jq -r '.home_md' "$AI_RESPONSE_FILE" > wiki/Home.md
-          jq -r '.release_notes' "$AI_RESPONSE_FILE" > wiki/Release-Notes.md
+
+          # Strip markdown code fences if present, then parse JSON
+          sed '/^```/d' "$AI_RESPONSE_FILE" > /tmp/clean_response.json
+
+          jq -r '.home_md' /tmp/clean_response.json > wiki/Home.md
+          jq -r '.release_notes' /tmp/clean_response.json > wiki/Release-Notes.md
 
           echo "Generated wiki/Home.md ($(wc -c < wiki/Home.md) bytes)"
           echo "Generated wiki/Release-Notes.md ($(wc -c < wiki/Release-Notes.md) bytes)"

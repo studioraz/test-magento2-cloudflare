@@ -117,8 +117,11 @@ jobs:
         run: |
           mkdir -p wiki
 
+          # Strip markdown code fences if present, then parse JSON
+          sed '/^```/d' "$AI_RESPONSE_FILE" > /tmp/clean_response.json
+
           # Extract the new release notes entry
-          jq -r '.release_notes_entry' "$AI_RESPONSE_FILE" > /tmp/new_entry.md
+          jq -r '.release_notes_entry' /tmp/clean_response.json > /tmp/new_entry.md
 
           # Update Release-Notes.md: insert new entry after the heading
           if [ -f wiki/Release-Notes.md ]; then
@@ -139,9 +142,9 @@ jobs:
           fi
 
           # Update Home.md only if the AI returned content
-          HOME_LENGTH=$(jq -r '.home_md | length' "$AI_RESPONSE_FILE")
+          HOME_LENGTH=$(jq -r '.home_md | length' /tmp/clean_response.json)
           if [ "$HOME_LENGTH" -gt 0 ]; then
-            jq -r '.home_md' "$AI_RESPONSE_FILE" > wiki/Home.md
+            jq -r '.home_md' /tmp/clean_response.json > wiki/Home.md
           fi
 
       - name: Commit and push
