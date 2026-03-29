@@ -54,13 +54,19 @@ jobs:
 
           echo "Diffing $PREV_TAG..$TAG"
 
-          # Structural diff of source files (capped at 100KB to stay within model context)
-          git diff "$PREV_TAG" "$TAG" -- '*.php' '*.xml' '*.phtml' '*.js' '*.html' '*.css' \
-            | head -c 100000 > /tmp/release.diff
+          # All changed files (not just source — includes config, docs, workflows)
+          git diff "$PREV_TAG" "$TAG" --name-status | head -200 > /tmp/changed_files.txt
 
-          # Changed file list
-          git diff "$PREV_TAG" "$TAG" --name-only -- '*.php' '*.xml' '*.phtml' \
-            | head -40 > /tmp/changed_files.txt
+          # Full diff (pay-as-you-go allows large context)
+          git diff "$PREV_TAG" "$TAG" -U3 | head -c 100000 > /tmp/release.diff
+
+          # If diff is empty, use stat summary
+          if [ ! -s /tmp/release.diff ]; then
+            git diff "$PREV_TAG" "$TAG" --stat | head -c 100000 > /tmp/release.diff
+          fi
+
+          echo "Diff size: $(wc -c < /tmp/release.diff) bytes"
+          echo "Changed files: $(wc -l < /tmp/changed_files.txt)"
 
       - name: Prepare current wiki content
         run: |
@@ -85,22 +91,20 @@ jobs:
             echo "URL: ${{ steps.release.outputs.url }}"
             echo "Date: ${{ steps.release.outputs.date }}"
             echo ""
-            echo "### Changed files"
-            echo '```'
+            echo "Changed files (status: A=added, M=modified, D=deleted):"
             cat /tmp/changed_files.txt
-            echo '```'
             echo ""
-            echo "### Code diff"
-            echo '```diff'
+            echo "Diff:"
             cat /tmp/release.diff
-            echo '```'
             echo ""
-            echo "### Current Release-Notes.md"
+            echo "Current Release-Notes.md:"
             cat /tmp/current_release_notes.md
             echo ""
-            echo "### Current Home.md"
+            echo "Current Home.md:"
             cat /tmp/current_home.md
           } > /tmp/user_prompt.txt
+
+          echo "Prompt size: $(wc -c < /tmp/user_prompt.txt) bytes"
 
       - name: Generate documentation update
         id: ai
@@ -109,7 +113,7 @@ jobs:
           system-prompt-file: .github/prompts/update-wiki-system.md
           prompt-file: /tmp/user_prompt.txt
           model: openai/gpt-4o
-#          max-tokens: 8000
+          max-tokens: 16000
 
       - name: Apply documentation changes
         env:

@@ -129,7 +129,7 @@ jobs:
           system-prompt-file: .github/prompts/init-wiki-system.md
           prompt-file: /tmp/user_prompt.txt
           model: openai/gpt-4o
-          max-tokens: 8000
+          max-tokens: 16000
 
       - name: Write wiki files
         if: steps.check.outputs.exists == 'false'
