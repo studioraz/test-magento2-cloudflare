@@ -1,5 +1,11 @@
 # Release Notes
 
+## [v0.0.6](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.6) — 2026-03-29
+
+### Improvements
+- Removed outdated wiki documentation workflow instructions to simplify maintenance.
+
+
 ## [v0.0.5](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.5) — 2026-03-29
 
 ### Improvements
