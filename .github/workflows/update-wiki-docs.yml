@@ -1,0 +1,138 @@
+name: Update Wiki Documentation
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to generate docs for (e.g. v1.2.0)'
+        required: true
+
+permissions:
+  contents: write
+  models: read
+
+jobs:
+  update-docs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve release context
+        id: release
+        run: |
+          if [ "${{ github.event_name }}" = "release" ]; then
+            TAG="${{ github.event.release.tag_name }}"
+            URL="${{ github.event.release.html_url }}"
+            DATE=$(echo "${{ github.event.release.created_at }}" | cut -dT -f1)
+          else
+            TAG="${{ github.event.inputs.tag }}"
+            URL="https://github.com/${{ github.repository }}/releases/tag/$TAG"
+            DATE=$(date +%Y-%m-%d)
+          fi
+
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+
+      - name: Get diff from previous tag
+        run: |
+          TAG="${{ steps.release.outputs.tag }}"
+
+          # Find the previous tag (by version sort, excluding the current one)
+          PREV_TAG=$(git tag --sort=-v:refname | grep -v "^${TAG}$" | head -1)
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "No previous tag found — diffing against initial commit"
+            PREV_TAG=$(git rev-list --max-parents=0 HEAD)
+          fi
+
+          echo "Diffing $PREV_TAG..$TAG"
+
+          # Structural diff of source files (capped at 100KB to stay within model context)
+          git diff "$PREV_TAG" "$TAG" -- '*.php' '*.xml' '*.phtml' '*.js' '*.html' '*.css' \
+            | head -c 100000 > /tmp/release.diff
+
+          # Changed file list
+          git diff "$PREV_TAG" "$TAG" --name-only -- '*.php' '*.xml' '*.phtml' \
+            | head -40 > /tmp/changed_files.txt
+
+      - name: Prepare current wiki content
+        run: |
+          mkdir -p wiki
+
+          if [ -f wiki/Release-Notes.md ]; then
+            cp wiki/Release-Notes.md /tmp/current_release_notes.md
+          else
+            echo "# Release Notes" > /tmp/current_release_notes.md
+          fi
+
+          if [ -f wiki/Home.md ]; then
+            cp wiki/Home.md /tmp/current_home.md
+          else
+            echo "" > /tmp/current_home.md
+          fi
+
+      - name: Generate documentation update
+        id: ai
+        uses: actions/ai-inference@v1
+        with:
+          prompt-file: .github/prompts/update-wiki.prompt.yml
+          input: |
+            version: ${{ steps.release.outputs.tag }}
+            release_url: ${{ steps.release.outputs.url }}
+            release_date: ${{ steps.release.outputs.date }}
+          file_input: |
+            diff: /tmp/release.diff
+            changed_files: /tmp/changed_files.txt
+            current_release_notes: /tmp/current_release_notes.md
+            current_home: /tmp/current_home.md
+
+      - name: Apply documentation changes
+        env:
+          AI_RESPONSE_FILE: ${{ steps.ai.outputs.response-file }}
+        run: |
+          mkdir -p wiki
+
+          # Extract the new release notes entry
+          jq -r '.release_notes_entry' "$AI_RESPONSE_FILE" > /tmp/new_entry.md
+
+          # Update Release-Notes.md: insert new entry after the heading
+          if [ -f wiki/Release-Notes.md ]; then
+            {
+              head -1 wiki/Release-Notes.md
+              echo ""
+              cat /tmp/new_entry.md
+              echo ""
+              tail -n +2 wiki/Release-Notes.md
+            } > /tmp/updated_release_notes.md
+            mv /tmp/updated_release_notes.md wiki/Release-Notes.md
+          else
+            {
+              echo "# Release Notes"
+              echo ""
+              cat /tmp/new_entry.md
+            } > wiki/Release-Notes.md
+          fi
+
+          # Update Home.md only if the AI returned content
+          HOME_LENGTH=$(jq -r '.home_md | length' "$AI_RESPONSE_FILE")
+          if [ "$HOME_LENGTH" -gt 0 ]; then
+            jq -r '.home_md' "$AI_RESPONSE_FILE" > wiki/Home.md
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add wiki/
+          if git diff --cached --quiet; then
+            echo "No wiki changes to commit"
+          else
+            git commit -m "docs: update wiki for ${{ steps.release.outputs.tag }}"
+            git push
+          fi

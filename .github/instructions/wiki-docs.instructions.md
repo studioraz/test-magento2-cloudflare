@@ -7,14 +7,12 @@ applyTo: "wiki/**"
 ## Context
 
 This repository contains a **Magento 2 module** in the `SR` namespace.
-When assigned a wiki documentation issue, your job is to update the wiki
-based on what actually changed in the code — not to rewrite or invent.
+When editing wiki documentation, update it based on what actually changed
+in the code — not to rewrite or invent.
 
-The issue will always contain:
-- Release tag and version
-- Git diff of changed files
-- List of modified PHP/XML files
-- GitHub release URL
+Documentation updates are generated automatically by the `update-wiki-docs`
+workflow using `actions/ai-inference`. These instructions also apply when
+editing wiki files manually with Copilot assistance.
 
 ---
 

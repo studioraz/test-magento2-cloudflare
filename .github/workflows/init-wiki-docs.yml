@@ -4,8 +4,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
+  models: read
+  pull-requests: write
 
 jobs:
   init:
@@ -16,7 +17,53 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Check if wiki already exists
+        id: check
+        run: |
+          if [ -f wiki/Home.md ] && [ -f wiki/Release-Notes.md ]; then
+            echo "Wiki files already exist. Delete them first to re-initialize."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Resolve latest release
+        if: steps.check.outputs.exists == 'false'
+        id: release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            try {
+              const { data } = await github.rest.repos.getLatestRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+              });
+              core.setOutput('tag', data.tag_name);
+              core.setOutput('url', data.html_url);
+              core.setOutput('date', data.published_at.split('T')[0]);
+              console.log(`Latest release: ${data.tag_name}`);
+            } catch (e) {
+              const tags = await github.rest.repos.listTags({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 1,
+              });
+              if (tags.data.length > 0) {
+                const tag = tags.data[0].name;
+                core.setOutput('tag', tag);
+                core.setOutput('url', `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/${tag}`);
+                core.setOutput('date', new Date().toISOString().split('T')[0]);
+                console.log(`No release found, using latest tag: ${tag}`);
+              } else {
+                core.setOutput('tag', '');
+                core.setOutput('url', '');
+                core.setOutput('date', new Date().toISOString().split('T')[0]);
+                console.log('No releases or tags found');
+              }
+            }
+
       - name: Collect repository context
+        if: steps.check.outputs.exists == 'false'
         run: |
           find . -type f \( -name "*.php" -o -name "*.xml" -o -name "*.phtml" \) \
             | grep -v vendor | grep -v '.git' | sort > /tmp/file_tree.txt
@@ -29,106 +76,54 @@ jobs:
             --exclude-dir=vendor \
             | head -200 > /tmp/signatures.txt
 
-          find . -path "*/etc/module.xml" | xargs cat 2>/dev/null > /tmp/module_xml.txt || true
+          find . -path "*/etc/module.xml" -exec cat {} + 2>/dev/null > /tmp/module_xml.txt || true
 
           find . \( -path "*/etc/config.xml" -o -path "*/etc/adminhtml/system.xml" \) \
-            | xargs cat 2>/dev/null > /tmp/config_xml.txt || true
+            -exec cat {} + 2>/dev/null > /tmp/config_xml.txt || true
 
-      - name: Create initialization issue for Copilot
-        uses: actions/github-script@v7
+      - name: Generate initial documentation
+        if: steps.check.outputs.exists == 'false'
+        id: ai
+        uses: actions/ai-inference@v1
         with:
-          script: |
-            const fs = require('fs');
+          prompt-file: .github/prompts/init-wiki.prompt.yml
+          input: |
+            version: ${{ steps.release.outputs.tag }}
+            release_url: ${{ steps.release.outputs.url }}
+            release_date: ${{ steps.release.outputs.date }}
+          file_input: |
+            composer: /tmp/composer.txt
+            readme: /tmp/readme.txt
+            module_xml: /tmp/module_xml.txt
+            config_xml: /tmp/config_xml.txt
+            file_tree: /tmp/file_tree.txt
+            signatures: /tmp/signatures.txt
 
-            const read = (path) => {
-              try { return fs.readFileSync(path, 'utf8').trim(); }
-              catch { return ''; }
-            };
+      - name: Write wiki files
+        if: steps.check.outputs.exists == 'false'
+        env:
+          AI_RESPONSE_FILE: ${{ steps.ai.outputs.response-file }}
+        run: |
+          mkdir -p wiki
+          jq -r '.home_md' "$AI_RESPONSE_FILE" > wiki/Home.md
+          jq -r '.release_notes' "$AI_RESPONSE_FILE" > wiki/Release-Notes.md
 
-            const fileTree   = read('/tmp/file_tree.txt');
-            const composer   = read('/tmp/composer.txt');
-            const readme     = read('/tmp/readme.txt');
-            const signatures = read('/tmp/signatures.txt');
-            const moduleXml  = read('/tmp/module_xml.txt');
-            const configXml  = read('/tmp/config_xml.txt');
+          echo "Generated wiki/Home.md ($(wc -c < wiki/Home.md) bytes)"
+          echo "Generated wiki/Release-Notes.md ($(wc -c < wiki/Release-Notes.md) bytes)"
 
-            const body = [
-              '## Task',
-              '',
-              'This is the **initial documentation generation** request.',
-              'The `wiki/` folder is empty or does not yet have real content.',
-              '',
-              'Your job is to read the full repository structure below and generate:',
-              '- `wiki/Home.md` — complete module documentation for store administrators and developers',
-              '- `wiki/Release-Notes.md` — placeholder with a single first entry based on the current state',
-              '',
-              'Follow the instructions in `.github/instructions/wiki-docs.instructions.md`.',
-              '',
-              '---',
-              '',
-              '## composer.json',
-              '```json',
-              composer,
-              '```',
-              '',
-              '---',
-              '',
-              '## README.md',
-              readme,
-              '',
-              '---',
-              '',
-              '## Module XML',
-              '```xml',
-              moduleXml,
-              '```',
-              '',
-              '---',
-              '',
-              '## Configuration XML (config.xml + system.xml)',
-              '```xml',
-              configXml,
-              '```',
-              '',
-              '---',
-              '',
-              '## Full File Tree',
-              '```',
-              fileTree,
-              '```',
-              '',
-              '---',
-              '',
-              '## Public PHP Signatures',
-              '```php',
-              signatures,
-              '```',
-              '',
-              '---',
-              '',
-              '## Acceptance Criteria',
-              '- [ ] `wiki/Home.md` created with full module documentation',
-              '- [ ] `wiki/Home.md` includes: Overview, Features, Requirements, Installation, Configuration table, Architecture',
-              '- [ ] `wiki/Release-Notes.md` created with initial entry',
-              '- [ ] Written in plain language understandable by store administrators',
-              '- [ ] No source files modified',
-            ].join('\n');
+      - name: Create pull request
+        if: steps.check.outputs.exists == 'false'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: docs/init-wiki
+          title: "📝 docs: initial wiki documentation"
+          body: |
+            Auto-generated initial wiki documentation using `actions/ai-inference`.
 
-            const issue = await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: '📝 docs: generate initial wiki documentation',
-              body: body,
-              labels: ['documentation'],
-            });
+            **Please review before merging:**
+            - [ ] `wiki/Home.md` — module overview, features, configuration
+            - [ ] `wiki/Release-Notes.md` — initial release entry
 
-            console.log(`Issue #${issue.data.number}: ${issue.data.html_url}`);
-
-            await github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: issue.data.number,
-              body: '@copilot Please complete the task described in this issue.',
-            });
-
-            console.log('Copilot triggered via comment.');
+            Once merged, the `wiki-sync` workflow will publish to the GitHub Wiki.
+          labels: documentation
+          commit-message: "docs: generate initial wiki documentation"
