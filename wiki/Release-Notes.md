@@ -3,6 +3,9 @@
 
 
 
+
+
+
 ## [v0.0.2](https://github.com/studioraz/test-magento2-cloudflare/releases/tag/0.0.2) — 2026-03-29
 
 Initial release.
